@@ -1,63 +1,29 @@
-CS204 Project - Branch Analyser and Predictor
-Progress Write-Up
-Date: April 13, 2026
-Student: Kartik
+Branch Prediction Simulator (Intel Pin Tool)
 
-Objective:
+This project is a hardware simulation tool built using the *Intel Pin* framework. It hooks into any running Linux program, monitors its assembly instructions in real-time, and simulates a **Hybrid (Tournament) Branch Predictor**—the same type of architecture used in classic high-performance processors like the Alpha 21264.
 
-The project uses Intel PIN to instrument a running program and
-study its branch behaviour. Three things are done:
-  1. Generate an instruction trace
-  2. Observe how branches behave (taken or not)
-  3. Predict branch outcomes using a 2-bit saturating counter
+What Does This Tool Do?
 
+When programs execute, they encounter decision points (`if-else` statements, loops, etc.) known as *branches*. Modern CPUs try to guess whether a branch will be *Taken (T)* or *Not Taken (N)* before it actually happens to speed up execution. 
 
-What has been done so far:
+This simulator models three strategies simultaneously to see which one guesses best:
+1. *Global Predictor:* Makes a guess based purely on the memory address (PC) of the branch instruction.
+2. *Local Predictor:* Keeps track of the past history of *that specific branch* (e.g., "this loop ran 4 times before") to make a smart guess.
+3. *Meta-Predictor (The Referee):* Keeps score between the Global and Local predictors. If the Local predictor is doing a better job for a certain branch, the Meta-predictor chooses the Local guess.
 
-PIN Tool Written
-  A PIN tool (branch_analyzer.cpp) was written that plugs into
-  any Linux binary. PIN intercepts every instruction at runtime
-  without needing source code of the target program.
+Hardware Specifications
 
-Instruction Trace
-  Every instruction is logged to trace.txt with its address,
-  whether it is a branch or not, and its disassembly. A limit
-  knob (-max_trace) keeps the file size manageable.
+1. *Saturating Counters:* The simulator uses 2-bit counters to track history. Instead of changing its mind immediately on a single anomaly, it takes multiple consecutive wrong guesses to completely flip its prediction strategy (Strongly Taken ↔ Weakly Taken ↔ Weakly Not Taken ↔ Strongly Not Taken).
+2. *Smart Initialization:* All tracking tables start in a neutral `WEAKLY_TAKEN` state, allowing the system to adapt rapidly to loops from the very first instruction.
 
-Branch Pattern Tracking
-  For every conditional branch the tool tracks how many times
-  it was taken vs not-taken, and stores the last 16 outcomes
-  as a T/N string (e.g. TTTNTTTN). This makes it easy to spot
-  patterns like loop exits (TTTTN...) or always-taken branches.
+How to Build & Run
 
-Branch Predictor
-  A bimodal predictor was implemented using a Branch History
-  Table (BHT). Each entry is a 2-bit saturating counter:
+# Prerequisites
+1. *Intel Pin Kit (v3.x+):* Installed on your Linux machine.
+2. A standard C++17 compiler (`g++`).
 
-    0 = Strongly Not-Taken
-    1 = Weakly Not-Taken
-    2 = Weakly Taken
-    3 = Strongly Taken
-
-  The table is indexed by PC % table_size (default 4096 entries).
-  After each branch the counter is incremented or decremented
-  based on whether the branch was actually taken. Prediction
-  accuracy is reported per-branch and overall.
-
-Output
-  Two files are written when the program finishes:
-    trace.txt        - full instruction trace
-    branch_stats.txt - per-branch stats, patterns, accuracy
-
-Status:
-
-Done:
-  - PIN tool written and compiling
-  - Instruction trace generation
-  - Branch classification and pattern logging
-  - Bimodal predictor with accuracy reporting
-  - All build errors fixed
-
-Still to do:
-  - Run on actual benchmarks and collect results
-  - Analyse patterns and discuss findings in report
+# 1. Compile the Tool
+Set your Pin root path variable and compile the shared library using the project Makefile:
+```bash
+export PIN_ROOT=/path/to/your/pin-kit
+make OBJDIR=obj/
