@@ -1,0 +1,13 @@
+# Pin build artifacts and binaries
+*.o
+*.d
+*.so
+obj-intel64/
+a.out
+
+# Tool Outputs
+trace.txt
+branch_stats.txt
+
+# System / ZIP leftovers
+*.zip
